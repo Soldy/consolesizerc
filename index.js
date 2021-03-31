@@ -10,9 +10,22 @@ const $stdio = new (require('consolestdiorc')).base();
  * @prototype
  */
 const sizeBase=function(){
+    /*
+     * @param {function}
+     * @param {integer}
+     * @param {string}
+     * @public
+     * @return {boolean}
+     */
     this.add = function(func, level, name){
         return _levels.add( func, level, name );
     }
+    /*
+     * @param {integer}
+     * @param {string}
+     * @public
+     * @return {boolean}
+     */
     this.del = function(level, name){
         return _levels.add( level, name );
     }
