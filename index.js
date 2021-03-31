@@ -18,8 +18,8 @@ const sizeBase=function(){
      * @return {boolean}
      */
     this.add = function(func, level, name){
-        return _levels.add( func, level, name );
-    }
+        return _levels.add(func, level, name);
+    };
     /*
      * @param {integer}
      * @param {string}
@@ -27,88 +27,124 @@ const sizeBase=function(){
      * @return {boolean}
      */
     this.del = function(level, name){
-        return _levels.add( level, name );
+        return _levels.del(level, name);
+    };
+    this.setup = function(){
+        return _setup;
     }
+    /*
+     * @public
+     * @return {boolean}
+     */
+    this.status = function(){
+        return {
+            'turns' : _turns,
+            'last' : _last
+
+        };
+    };
     /*
      * @private
      * @var {setuprc}
      */
-    const _setup = new $setuprc(
+    const _setup = new $setuprc({
         'minRows':{
             'type'    : 'int',
             'default' : 20
         },
         'minColumns':{
             'type'    : 'int',
-            'default' : 190
+            'default' : 100
         },
         'delay':{
             'type'    : 'int',
             'default' : 500
         },
-        'check':{
+        'loopTime':{
             'type'    : 'int',
-            'default' : 2000
+            'default' : 1000
         },
-    );
+    });
     /*
-     * @private {integer}
+     * @private
+     * @var {integer}
      */
-    let _columns = 0
+    let _columns = 0;
     /*
-     * @private {integer}
+     * @private
+     * @var {integer}
      */
-    let _rows = 0
+    let _rows = 0;
     /*
-     * @private {boolean}
+     * @private 
+     * @var {boolean}
      */
     let _changing = false;
     /*
-     * @private {boolean}
+     * @private
+     * @var {boolean}
      */
     let _delayed = false;
+    /*
+     * @private 
+     * @var {integer}
+     */
+    let _turns = 0;
+    /*
+     * @private 
+     * @var {integer}
+     */
+    let _last = 0;
+    /*
+     * @private 
+     */
+    const _loop = async function(){
+        if (await _check())
+            await _change();
+        setTimeout(
+            _loop,
+            _setup.get('loopTime')
+        );
+    }
     /*
      * @private
      * @return {boolean}
      */
-    const _check = function(){
+    const _check = async function(){
         const columns = process.stdout.columns;
         const rows = process.stdout.rows;
-        setTimeout(
-            _check,
-            _setup.get('check')
-        );
-        if (
-            ( _columns === columns ) &&
-            ( _rows === rows )
+        _last = Date.now();
+        if(
+            (_columns === columns) &&
+            (_rows === rows)
         )
             return false;
+        _turns++ ; 
         _columns = columns;
         _rows = rows;
-        if( _toSmall() )
+        if(_toSmall())
             return false;
-        change();
         return true;
-    }
+    };
     /*
      * @private
      * @return {boolean}
      */
     const _toSmall = function(){
         if(
-            (_columns > _setup.get('minCoolumns')) ||
+            (_columns > _setup.get('minColumns')) ||
             (_rows > _setup.get('minRows')) 
         )
-           return false;
+            return false;
         $stdio.clear();
-        $stdio.printTo('<+>', 1,1 );
+        $stdio.printTo('<+>', 0, 0);
         return true;
-    }
+    };
     /*
      * @private
      * @return {boolean}
      */
-    const _change = function(){
+    const _change = async function(){
         if ( _changing ) {
             _delayed = true;
             setTimeout(
@@ -117,23 +153,19 @@ const sizeBase=function(){
             );
             return false;
         }
-        _levels.run();
+        $stdio.clear();
+        _changing = true;
+        _delayed = false;
+        await _levels.run();
+        _changing = false;
         return true;
-    }
+    };
     /*
      * @private
      */
-    const _levels = new $levelRunner(
-        function(){
-            _changing = true;
-            _delayed = false;
-        },
-        function(){
-            _changing = false;
-        }
-    );
+    const _levels = new $levelRunner();
     // constructor
-    _check();
+    _loop();
 };
 
 
