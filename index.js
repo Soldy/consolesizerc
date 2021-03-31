@@ -10,8 +10,18 @@ const $stdio = new (require('consolestdiorc')).base();
  * @prototype
  */
 const sizeBase=function(){
+    this.add = function(func, level, name){
+        return _levels.add( func, level, name );
+    }
+    this.del = function(level, name){
+        return _levels.add( level, name );
+    }
+    /*
+     * @private
+     * @var {setuprc}
+     */
     const _setup = new $setuprc(
-        'miniRows':{
+        'minRows':{
             'type'    : 'int',
             'default' : 20
         },
@@ -20,7 +30,7 @@ const sizeBase=function(){
             'default' : 190
         },
         'delay':{
-            'type'    : 'intl',
+            'type'    : 'int',
             'default' : 500
         },
         'check':{
@@ -28,36 +38,65 @@ const sizeBase=function(){
             'default' : 2000
         },
     );
-    let _columns = parseInt(
-        process.stdout.columns
-    );
-    let _rows = parseInt(
-        process.stdout.rowss
-    );
+    /*
+     * @private {integer}
+     */
+    let _columns = 0
+    /*
+     * @private {integer}
+     */
+    let _rows = 0
+    /*
+     * @private {boolean}
+     */
     let _changing = false;
+    /*
+     * @private {boolean}
+     */
     let _delayed = false;
+    /*
+     * @private
+     * @return {boolean}
+     */
     const _check = function(){
+        const columns = process.stdout.columns;
+        const rows = process.stdout.rows;
         setTimeout(
             _check,
             _setup.get('check')
         );
         if (
-            ( _columns === process.stdout.columns ) &&
-            ( _rows === process.stdout.rows )
+            ( _columns === columns ) &&
+            ( _rows === rows )
         )
             return false;
-        if(
-        
-        )
+        _columns = columns;
+        _rows = rows;
+        if( _toSmall() )
+            return false;
+        change();
+        return true;
     }
+    /*
+     * @private
+     * @return {boolean}
+     */
     const _toSmall = function(){
-        
+        if(
+            (_columns > _setup.get('minCoolumns')) ||
+            (_rows > _setup.get('minRows')) 
+        )
+           return false;
+        $stdio.clear();
+        $stdio.printTo('<+>', 1,1 );
+        return true;
     }
+    /*
+     * @private
+     * @return {boolean}
+     */
     const _change = function(){
-        if (
-            (_changing) &&
-            (_delayed === false)
-        ){
+        if ( _changing ) {
             _delayed = true;
             setTimeout(
                 _change,
@@ -75,21 +114,16 @@ const sizeBase=function(){
         function(){
             _changing = true;
             _delayed = false;
-            _columns = parseInt(
-                process.stdout.columns
-            );
-            _rows = parseInt(
-                 process.stdout.rowss
-            );
         },
         function(){
             _changing = false;
         }
     );
+    // constructor
+    _check();
 };
 
 
-exports.Base = initBase;
-exports.base = initBase; // compatibility
-exports.init = initBase; // coompatibility
+exports.Base = sizeBase;
+exports.base = sizeBase; // compatibility
 
